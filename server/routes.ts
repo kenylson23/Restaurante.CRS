@@ -527,10 +527,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create table
   app.post("/api/tables", async (req, res) => {
     try {
+      console.log("Request body for table creation:", req.body);
       const validatedData = insertTableSchema.parse(req.body);
+      console.log("Validated data:", validatedData);
       const table = await storage.createTable(validatedData);
       res.status(201).json(table);
     } catch (error: any) {
+      console.error("Error creating table:", error);
       if (error.name === 'ZodError') {
         return res.status(400).json({ error: "Dados inválidos", details: error.errors });
       }

@@ -380,6 +380,7 @@ export class DatabaseStorage implements IStorage {
     await this.ensureInitialized();
     
     console.log(`🔍 Verificando duplicação para mesa ${insertTable.tableNumber} no local ${insertTable.locationId}`);
+    console.log("🔍 Data to insert:", insertTable);
     
     // Verificar se já existe uma mesa com o mesmo número no mesmo local
     const existingTable = await db
@@ -396,11 +397,19 @@ export class DatabaseStorage implements IStorage {
       throw new Error(`Já existe uma mesa número ${insertTable.tableNumber} no local ${insertTable.locationId}`);
     }
     
-    const [table] = await db
-      .insert(tables)
-      .values(insertTable)
-      .returning();
-    return table;
+    console.log("🔍 Inserting with values:", insertTable);
+    
+    try {
+      const [table] = await db
+        .insert(tables)
+        .values(insertTable)
+        .returning();
+      console.log("🔍 Successfully created table:", table);
+      return table;
+    } catch (error) {
+      console.error("🔍 Error inserting table:", error);
+      throw error;
+    }
   }
 
   async updateTable(id: number, updates: Partial<Table>): Promise<Table> {
