@@ -1,16 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { useAuth } from '../hooks/useAuth';
+import { useRealTimeUpdates } from '../hooks/useRealTimeUpdates';
 import OrderManagement from '../components/OrderManagement';
 import MenuManagement from '../components/MenuManagement';
 import OrderStats from '../components/OrderStats';
 import TableManagement from '../components/TableManagement';
-import { RefreshCw } from 'lucide-react';
+import RealTimeStatus from '../components/RealTimeStatus';
 
 export default function Admin() {
   const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState('orders');
   const { isAuthenticated, isLoading, userRole, logout } = useAuth();
+  
+  // Enable real-time updates for the admin panel
+  useRealTimeUpdates({ enabled: true });
 
   useEffect(() => {
     if (!isLoading && (!isAuthenticated || userRole !== 'admin')) {
@@ -47,11 +51,7 @@ export default function Admin() {
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-3">
                 <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 truncate">Painel Admin</h1>
-                <div className="flex items-center gap-1 bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs">
-                  <RefreshCw className="w-3 h-3 animate-spin" />
-                  <span className="hidden sm:inline">Auto-refresh ativo</span>
-                  <span className="sm:hidden">Live</span>
-                </div>
+                <RealTimeStatus enabled={true} showLabel={true} />
               </div>
               <p className="text-sm sm:text-base text-gray-600 mt-1">Gestão Las Tortillas • Dados em tempo real</p>
             </div>

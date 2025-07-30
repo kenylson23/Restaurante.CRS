@@ -40,6 +40,22 @@ setInterval(cleanExpiredCache, 30 * 1000);
 
 
 
+// Store active SSE connections
+const sseConnections = new Set<any>();
+
+// Function to broadcast to all SSE connections
+function broadcastToSSE(data: any) {
+  const message = `data: ${JSON.stringify(data)}\n\n`;
+  sseConnections.forEach(connection => {
+    try {
+      connection.write(message);
+    } catch (error) {
+      console.error('Error broadcasting to SSE connection:', error);
+      sseConnections.delete(connection);
+    }
+  });
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   
   // Headers otimizados para performance
@@ -305,6 +321,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const result = await storage.createOrder(validatedOrder, validatedItems);
       
+      // Broadcast new order to SSE connections
+      broadcastToSSE({
+        type: 'new_order',
+        orderId: result.id,
+        message: 'Novo pedido recebido',
+        timestamp: new Date().toISOString()
+      });
+      
       // Send WhatsApp notification (optional - can be implemented later)
       // await sendWhatsAppNotification(result);
       
@@ -335,6 +359,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         return res.status(400).json({ error: "Either status or estimatedDeliveryTime is required" });
       }
+      
+      // Broadcast order update to SSE connections
+      broadcastToSSE({
+        type: 'order_updated',
+        orderId: updatedOrder.id,
+        status: updatedOrder.status,
+        message: `Pedido ${updatedOrder.id} atualizado para ${updatedOrder.status}`,
+        timestamp: new Date().toISOString()
+      });
       
       // Send WhatsApp notification about status change (optional)
       // await sendStatusUpdateNotification(updatedOrder);
@@ -392,6 +425,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
+  });
+
+  // Server-Sent Events endpoint for real-time updates
+  app.get("/api/orders/stream", (req, res) => {
+    // Set headers for Server-Sent Events
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Headers', 'Cache-Control');
+
+    // Add connection to active connections
+    sseConnections.add(res);
+    console.log(`New SSE connection established. Total connections: ${sseConnections.size}`);
+
+    // Send initial connection message
+    res.write('data: {"type": "connected", "message": "Real-time connection established"}\n\n');
+
+    // Keep connection alive with periodic heartbeat
+    const heartbeat = setInterval(() => {
+      try {
+        res.write('data: {"type": "heartbeat", "timestamp": "' + new Date().toISOString() + '"}\n\n');
+      } catch (error) {
+        clearInterval(heartbeat);
+        sseConnections.delete(res);
+      }
+    }, 30000); // Send heartbeat every 30 seconds
+
+    // Handle client disconnect
+    req.on('close', () => {
+      clearInterval(heartbeat);
+      sseConnections.delete(res);
+      console.log(`Client disconnected from orders stream. Total connections: ${sseConnections.size}`);
+    });
+
+    req.on('end', () => {
+      clearInterval(heartbeat);
+      sseConnections.delete(res);
+      console.log(`Client ended orders stream connection. Total connections: ${sseConnections.size}`);
+    });
   });
 
   // Delete order (admin only)

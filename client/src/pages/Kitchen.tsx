@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { useAuth } from '../hooks/useAuth';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRealTimeUpdates } from '../hooks/useRealTimeUpdates';
 import { 
   ArrowLeft, RefreshCw, Bell, BellOff, BarChart3, 
   Clock, CheckCircle, Users, MapPin, Phone, Timer, 
@@ -67,7 +68,10 @@ export default function Kitchen() {
   const [sortBy, setSortBy] = useState<'time' | 'priority' | 'status'>('time');
   const [lastOrderCount, setLastOrderCount] = useState(0);
   const [preparationTimes, setPreparationTimes] = useState<{[key: number]: string}>({});
-  const [isConnected, setIsConnected] = useState(false);
+  const { isConnected } = useRealTimeUpdates({ 
+    enabled: true, 
+    enableSound: soundEnabled 
+  });
 
   // Sistema de som
   const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
@@ -178,41 +182,7 @@ export default function Kitchen() {
     }
   };
 
-  // Real-time updates usando Server-Sent Events
-  useEffect(() => {
-    const eventSource = new EventSource('/api/orders/stream');
-    
-    eventSource.onopen = () => {
-      setIsConnected(true);
-      console.log('🔗 Conexão em tempo real estabelecida');
-    };
-
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        
-        // Invalidar cache para buscar dados atualizados
-        queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
-        
-        // Notificação sonora para novos pedidos
-        if (data.type === 'new_order' && soundEnabled) {
-          playNotificationSound();
-        }
-      } catch (error) {
-        console.error('Erro ao processar evento:', error);
-      }
-    };
-
-    eventSource.onerror = () => {
-      setIsConnected(false);
-      console.log('❌ Conexão em tempo real perdida, tentando reconectar...');
-    };
-
-    return () => {
-      eventSource.close();
-      setIsConnected(false);
-    };
-  }, [queryClient, soundEnabled]);
+  // Real-time updates são agora gerenciados pelo hook useRealTimeUpdates
 
   // Detectar novos pedidos para notificação sonora (backup)
   useEffect(() => {
