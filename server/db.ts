@@ -2,18 +2,26 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from "../shared/schema";
 
-// Use PostgreSQL database connection from Replit
-const DATABASE_URL = process.env.DATABASE_URL;
+// Use Supabase database connection
+const supabaseUrl = process.env.SUPABASE_URL!;
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
-if (!DATABASE_URL) {
-  throw new Error('Missing DATABASE_URL environment variable');
+if (!supabaseUrl || !serviceRoleKey) {
+  throw new Error('Missing Supabase environment variables');
 }
 
-console.log('Connecting to PostgreSQL database...');
+// Extract project reference from Supabase URL
+const projectRef = supabaseUrl.replace('https://', '').replace('.supabase.co', '');
 
-// Create connection using postgres-js
+// Create Supabase direct connection string - using transaction pooling
+const DATABASE_URL = `postgresql://postgres.${projectRef}:${serviceRoleKey}@aws-0-us-east-1.pooler.supabase.com:6543/postgres`;
+
+console.log('Connecting to Supabase database...');
+
+// Create connection using postgres-js for Supabase with proper SSL configuration
 const sql = postgres(DATABASE_URL, {
-  max: 10, // Connection pool size
+  max: 1, // Use 1 connection for transaction pooling
+  ssl: 'require',
   prepare: false
 });
 

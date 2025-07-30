@@ -458,5 +458,8 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-// Export storage instance - use PostgreSQL
-export const storage = new DatabaseStorage();
+// Import Supabase storage
+import { SupabaseStorage } from './supabase-storage';
+
+// Export storage instance - switch to Supabase
+export const storage = new SupabaseStorage();
