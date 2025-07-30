@@ -60,7 +60,6 @@ export default function Kitchen() {
   const queryClient = useQueryClient();
 
   // Estados de controle
-  const [autoRefresh, setAutoRefresh] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [showStats, setShowStats] = useState(true);
   const [filter, setFilter] = useState<KitchenFiltersType>('all');
@@ -68,6 +67,7 @@ export default function Kitchen() {
   const [sortBy, setSortBy] = useState<'time' | 'priority' | 'status'>('time');
   const [lastOrderCount, setLastOrderCount] = useState(0);
   const [preparationTimes, setPreparationTimes] = useState<{[key: number]: string}>({});
+  const [isConnected, setIsConnected] = useState(false);
 
   // Sistema de som
   const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
@@ -125,7 +125,7 @@ export default function Kitchen() {
   // Queries para dados
   const { data: orders = [], isLoading: ordersLoading } = useQuery({
     queryKey: ['/api/orders'],
-    refetchInterval: autoRefresh ? 3000 : false,
+    refetchInterval: false, // Removido auto-refresh
   });
 
   const { data: menuItems = [] } = useQuery({
@@ -178,7 +178,43 @@ export default function Kitchen() {
     }
   };
 
-  // Detectar novos pedidos para notificação sonora
+  // Real-time updates usando Server-Sent Events
+  useEffect(() => {
+    const eventSource = new EventSource('/api/orders/stream');
+    
+    eventSource.onopen = () => {
+      setIsConnected(true);
+      console.log('🔗 Conexão em tempo real estabelecida');
+    };
+
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        
+        // Invalidar cache para buscar dados atualizados
+        queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+        
+        // Notificação sonora para novos pedidos
+        if (data.type === 'new_order' && soundEnabled) {
+          playNotificationSound();
+        }
+      } catch (error) {
+        console.error('Erro ao processar evento:', error);
+      }
+    };
+
+    eventSource.onerror = () => {
+      setIsConnected(false);
+      console.log('❌ Conexão em tempo real perdida, tentando reconectar...');
+    };
+
+    return () => {
+      eventSource.close();
+      setIsConnected(false);
+    };
+  }, [queryClient, soundEnabled]);
+
+  // Detectar novos pedidos para notificação sonora (backup)
   useEffect(() => {
     if (orders.length > lastOrderCount && lastOrderCount > 0) {
       playNotificationSound();
