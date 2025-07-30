@@ -1,6 +1,6 @@
+import React, { memo, useCallback } from "react";
 import { motion } from "framer-motion";
-import { memo, useCallback } from "react";
-import heroImage from "@assets/From tortillas with Love   photo credit @andersson_samd_1751272348650.jpg";
+import { getHeroImages } from "../../shared/image-utils";
 
 // Componente memo para elementos flutuantes
 const FloatingElement = memo(({ 
@@ -56,19 +56,41 @@ export default function OptimizedHero() {
     }
   }, []);
 
+  const heroImages = getHeroImages();
+
   return (
     <section id="inicio" className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Background Image otimizada */}
-      <div 
-        className="absolute inset-0 parallax-bg"
-        style={{
-          backgroundImage: `url(${heroImage})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat',
-          willChange: 'transform'
-        }}
-      />
+      {/* Background Image otimizada com Supabase */}
+      <picture className="absolute inset-0">
+        <source 
+          media="(min-width: 1024px)" 
+          srcSet={`${heroImages.desktop.webp} 1920w`}
+          type="image/webp"
+        />
+        <source 
+          media="(min-width: 1024px)" 
+          srcSet={`${heroImages.desktop.jpg} 1920w`}
+          type="image/jpeg"
+        />
+        <source 
+          media="(max-width: 1023px)" 
+          srcSet={`${heroImages.mobile.webp} 768w`}
+          type="image/webp"
+        />
+        <source 
+          media="(max-width: 1023px)" 
+          srcSet={`${heroImages.mobile.jpg} 768w`}
+          type="image/jpeg"
+        />
+        <img 
+          src={heroImages.desktop.jpg}
+          alt="Las Tortillas Mexican Grill - Ambiente familiar"
+          className="absolute inset-0 w-full h-full object-cover parallax-bg"
+          style={{ willChange: 'transform' }}
+          loading="eager"
+          fetchPriority="high"
+        />
+      </picture>
       
       {/* Overlays */}
       <div className="absolute inset-0 bg-black/30" />

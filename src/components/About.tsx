@@ -55,7 +55,7 @@ export default function About() {
           >
             <div className="relative rounded-2xl shadow-2xl w-full h-auto overflow-hidden">
               <img 
-                src="/images/restaurant-ambiente.jpg?v=1" 
+                src="https://nuoblhgwtxyrafbyxjkw.supabase.co/storage/v1/object/public/images/public/restaurant-ambiente.jpg" 
                 alt="Clientes felizes no Las Tortillas Mexican Grill - ambiente familiar e acolhedor com chapéus mexicanos" 
                 className="w-full h-auto rounded-2xl shadow-2xl"
                 loading="lazy"

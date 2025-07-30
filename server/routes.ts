@@ -6,6 +6,7 @@ import { z } from "zod";
 import path from "path";
 import { auth, adminAuth } from "../shared/auth";
 import { generateTableQRCode, generateQRCodeSVG } from './qr-generator';
+import { imageProxyRouter } from './routes/image-proxy';
 
 // Cache otimizado para verificação de disponibilidade
 const availabilityCache = new Map<string, { available: boolean; timestamp: number }>();
@@ -690,6 +691,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: error.message });
     }
   });
+
+  // =================== IMAGE ROUTES ===================
+  
+  // Usar roteador de proxy de imagens
+  app.use('/api/images', imageProxyRouter);
 
   const httpServer = createServer(app);
   return httpServer;

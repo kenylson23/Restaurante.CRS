@@ -119,7 +119,7 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-### July 30, 2025: Migração Completa para Supabase
+### July 30, 2025: Migração Completa para Supabase com Storage de Imagens
 - **Integração Supabase**: Migração completa da base de dados PostgreSQL local para Supabase
 - **Configuração de Credenciais**: Implementação de SUPABASE_URL, SUPABASE_ANON_KEY e SUPABASE_SERVICE_ROLE_KEY
 - **Storage Híbrido**: Criação de SupabaseStorage implementando interface IStorage com cliente Supabase
@@ -128,6 +128,10 @@ Preferred communication style: Simple, everyday language.
 - **Performance Aprimorada**: Conexão em nuvem com pooling de transações para melhor escalabilidade
 - **Dados Preservados**: Migração bem-sucedida de todos os dados existentes (menu, mesas, etc.)
 - **Funcionalidades Testadas**: Todas as APIs (menu-items, reservations, orders, tables) funcionando corretamente
+- **Supabase Storage**: Migração completa de 27 imagens para Supabase Storage bucket "images"
+- **Imagens Organizadas**: Hero images, uploads de menu e ambiente organizados por categoria (public/, uploads/, src/)
+- **APIs de Imagem**: Sistema de proxy e utilitários para servir imagens do Supabase Storage
+- **URLs Otimizadas**: Todas as imagens do site agora servidas através de CDN do Supabase
 
 ### July 20, 2025: Painel da Cozinha Totalmente Responsivo para Smartphones e Tablets
 - **Header Adaptável**: Layout flex-col em mobile, flex-row em desktop com botões compactos
