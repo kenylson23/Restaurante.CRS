@@ -19,10 +19,10 @@ Las Tortillas Mexican Grill is a full-stack web application for a Mexican restau
 ### Backend Architecture
 - **Runtime**: Node.js with Express.js framework
 - **Language**: TypeScript with ES modules
-- **Database**: PostgreSQL with Drizzle ORM
-- **Database Provider**: Neon Database (serverless PostgreSQL)
+- **Database**: Supabase (PostgreSQL) with Drizzle ORM and Supabase client
+- **Database Provider**: Supabase (serverless PostgreSQL with real-time features)
 - **Validation**: Zod schemas for API request/response validation
-- **Development**: Currently uses in-memory storage with plans for PostgreSQL integration
+- **Storage**: Supabase-based storage with direct API integration
 
 ## Key Components
 
@@ -108,8 +108,9 @@ Las Tortillas Mexican Grill is a full-stack web application for a Mexican restau
 - **Frontend**: React with Vite build system
 
 ### Environment Configuration
-- **Database**: PostgreSQL connection via DATABASE_URL
-- **API**: RESTful endpoints for reservations, contacts, and menu items
+- **Database**: Supabase PostgreSQL connection via SUPABASE_URL and service credentials
+- **API**: RESTful endpoints for reservations, contacts, menu items, orders, and tables
+- **Authentication**: Supabase service role key for backend operations
 - **WhatsApp Integration**: Direct linking to +244 949639932
 
 ## User Preferences
@@ -117,6 +118,16 @@ Las Tortillas Mexican Grill is a full-stack web application for a Mexican restau
 Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
+
+### July 30, 2025: Migração Completa para Supabase
+- **Integração Supabase**: Migração completa da base de dados PostgreSQL local para Supabase
+- **Configuração de Credenciais**: Implementação de SUPABASE_URL, SUPABASE_ANON_KEY e SUPABASE_SERVICE_ROLE_KEY
+- **Storage Híbrido**: Criação de SupabaseStorage implementando interface IStorage com cliente Supabase
+- **API REST**: Utilização das APIs REST do Supabase para operações CRUD em menu_items, orders, reservations e tables
+- **Compatibilidade Drizzle**: Manutenção da compatibilidade com Drizzle ORM através de conexão direta PostgreSQL
+- **Performance Aprimorada**: Conexão em nuvem com pooling de transações para melhor escalabilidade
+- **Dados Preservados**: Migração bem-sucedida de todos os dados existentes (menu, mesas, etc.)
+- **Funcionalidades Testadas**: Todas as APIs (menu-items, reservations, orders, tables) funcionando corretamente
 
 ### July 20, 2025: Painel da Cozinha Totalmente Responsivo para Smartphones e Tablets
 - **Header Adaptável**: Layout flex-col em mobile, flex-row em desktop com botões compactos

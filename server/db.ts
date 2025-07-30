@@ -2,16 +2,27 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from "../shared/schema";
 
-// Use PostgreSQL database connection string from environment
-const DATABASE_URL = process.env.DATABASE_URL || `postgresql://${process.env.PGUSER || 'postgres'}:${process.env.PGPASSWORD || 'password'}@${process.env.PGHOST || 'localhost'}:${process.env.PGPORT || 5432}/${process.env.PGDATABASE || 'postgres'}`;
+// Use Supabase database connection
+const supabaseUrl = process.env.SUPABASE_URL!;
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
-console.log('Connecting to database with URL:', DATABASE_URL.replace(/:([^:@]+)@/, ':***@'));
+if (!supabaseUrl || !serviceRoleKey) {
+  throw new Error('Missing Supabase environment variables');
+}
 
-// Create connection using postgres-js for better compatibility
+// Extract project reference from Supabase URL
+const projectRef = supabaseUrl.replace('https://', '').replace('.supabase.co', '');
+
+// Create Supabase direct connection string - using transaction pooling
+const DATABASE_URL = `postgresql://postgres.${projectRef}:${serviceRoleKey}@aws-0-us-east-1.pooler.supabase.com:6543/postgres`;
+
+console.log('Connecting to Supabase database...');
+
+// Create connection using postgres-js for Supabase with proper SSL configuration
 const sql = postgres(DATABASE_URL, {
-  max: 20,
-  idle_timeout: 20,
-  max_lifetime: 60 * 30
+  max: 1, // Use 1 connection for transaction pooling
+  ssl: 'require',
+  prepare: false
 });
 
 export const db = drizzle(sql, { schema });
