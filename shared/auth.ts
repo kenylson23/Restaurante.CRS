@@ -6,10 +6,20 @@ export interface AuthUser {
   role?: string;
 }
 
+// Tipos de resposta das funções de autenticação
+interface AuthError {
+  message: string;
+}
+
+interface AuthResponse<T> {
+  data: T;
+  error: AuthError | null;
+}
+
 // Temporary stub implementations for auth - to be replaced with proper auth system
 export const auth = {
   // Registrar usuário
-  signUp: async (email: string, password: string, metadata?: { name?: string }) => {
+  signUp: async (email: string, password: string, metadata?: { name?: string }): Promise<AuthResponse<{ user: AuthUser }>> => {
     // TODO: Implement proper authentication with PostgreSQL
     console.log('Auth signUp called for:', email);
     return { 
@@ -19,24 +29,27 @@ export const auth = {
   },
 
   // Login
-  signIn: async (email: string, password: string) => {
+  signIn: async (email: string, password: string): Promise<AuthResponse<{ user: AuthUser; session: any }>> => {
     // TODO: Implement proper authentication with PostgreSQL
     console.log('Auth signIn called for:', email);
     return { 
-      data: { user: { id: '1', email } }, 
+      data: { 
+        user: { id: '1', email },
+        session: { token: 'mock-session-token', expires: Date.now() + 3600000 }
+      }, 
       error: null 
     };
   },
 
   // Logout
-  signOut: async () => {
+  signOut: async (): Promise<{ error: AuthError | null }> => {
     // TODO: Implement proper logout
     console.log('Auth signOut called');
     return { error: null };
   },
 
   // Obter usuário atual
-  getCurrentUser: async () => {
+  getCurrentUser: async (): Promise<{ user: AuthUser | null; error: AuthError | null }> => {
     // TODO: Implement proper user retrieval
     console.log('Auth getCurrentUser called');
     return { user: null, error: null };
@@ -53,7 +66,7 @@ export const auth = {
 // Utilitários administrativos para backend
 export const adminAuth = {
   // Criar usuário administrativamente
-  createUser: async (email: string, password: string, metadata?: any) => {
+  createUser: async (email: string, password: string, metadata?: any): Promise<AuthResponse<{ user: AuthUser }>> => {
     // TODO: Implement admin user creation with PostgreSQL
     console.log('Admin createUser called for:', email);
     return { 
@@ -63,7 +76,7 @@ export const adminAuth = {
   },
 
   // Obter usuário por ID
-  getUserById: async (userId: string) => {
+  getUserById: async (userId: string): Promise<AuthResponse<{ user: AuthUser }>> => {
     // TODO: Implement admin user retrieval
     console.log('Admin getUserById called for:', userId);
     return { 
@@ -73,7 +86,7 @@ export const adminAuth = {
   },
 
   // Listar usuários
-  listUsers: async () => {
+  listUsers: async (): Promise<AuthResponse<{ users: AuthUser[] }>> => {
     // TODO: Implement admin user listing
     console.log('Admin listUsers called');
     return { 
@@ -83,7 +96,7 @@ export const adminAuth = {
   },
 
   // Deletar usuário
-  deleteUser: async (userId: string) => {
+  deleteUser: async (userId: string): Promise<{ data: null; error: AuthError | null }> => {
     // TODO: Implement admin user deletion
     console.log('Admin deleteUser called for:', userId);
     return { 
