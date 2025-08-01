@@ -96,6 +96,21 @@ export const tables = pgTable("tables", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const printers = pgTable("printers", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  type: text("type").notNull(), // "network", "usb", "bluetooth"
+  ipAddress: text("ip_address"), // Para impressoras de rede
+  port: integer("port").default(9100), // Porta para impressoras de rede
+  devicePath: text("device_path"), // Para impressoras USB/Serial
+  paperWidth: integer("paper_width").default(80), // 58mm ou 80mm
+  isActive: boolean("is_active").default(true),
+  autoprint: boolean("autoprint").default(false), // Impressão automática
+  locationId: text("location_id").notNull(), // Localização da impressora
+  printerFor: text("printer_for").notNull(), // "kitchen", "bar", "expedite", "receipt"
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const insertReservationSchema = createInsertSchema(reservations).omit({
   id: true,
   createdAt: true,
@@ -128,6 +143,11 @@ export const insertTableSchema = createInsertSchema(tables).omit({
   createdAt: true,
 });
 
+export const insertPrinterSchema = createInsertSchema(printers).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types from Drizzle schema inference
 export type Reservation = typeof reservations.$inferSelect;
 export type InsertReservation = z.infer<typeof insertReservationSchema>;
@@ -146,5 +166,8 @@ export type InsertOrderItem = z.infer<typeof insertOrderItemSchema>;
 
 export type Table = typeof tables.$inferSelect;
 export type InsertTable = z.infer<typeof insertTableSchema>;
+
+export type Printer = typeof printers.$inferSelect;
+export type InsertPrinter = z.infer<typeof insertPrinterSchema>;
 
 

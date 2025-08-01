@@ -7,7 +7,7 @@ import {
   ArrowLeft, RefreshCw, Bell, BellOff, BarChart3, 
   Clock, CheckCircle, Users, MapPin, Phone, Timer, 
   AlertCircle, ChefHat, Package, TrendingUp, Star,
-  Flame, Play, Pause
+  Flame, Play, Pause, Printer
 } from 'lucide-react';
 
 interface OrderItem {
@@ -181,6 +181,31 @@ export default function Kitchen() {
       updatePreparationTimeMutation.mutate({ orderId, minutes });
       setPreparationTimes(prev => ({ ...prev, [orderId]: '' }));
     }
+  };
+
+  // Mutation para impressão de ticket
+  const printTicketMutation = useMutation({
+    mutationFn: async (orderId: number) => {
+      const response = await fetch(`/api/orders/${orderId}/print`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      if (!response.ok) throw new Error('Erro ao imprimir ticket');
+      return response.json();
+    },
+    onSuccess: () => {
+      // Opcional: mostrar feedback de sucesso
+      console.log('Ticket impresso com sucesso');
+    },
+    onError: (error) => {
+      console.error('Erro ao imprimir ticket:', error);
+    }
+  });
+
+  // Função para imprimir ticket
+  const printTicket = (orderId: number) => {
+    printTicketMutation.mutate(orderId);
   };
 
   // Real-time updates são agora gerenciados pelo hook useRealTimeUpdates
@@ -668,6 +693,17 @@ export default function Kitchen() {
 
                       {/* Botões de Ação do Pedido */}
                       <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 w-full">
+                        {/* Botão de Impressão - sempre visível */}
+                        <button
+                          onClick={() => printTicket(order.id)}
+                          disabled={printTicketMutation.isPending}
+                          className="flex items-center justify-center px-3 sm:px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 disabled:opacity-50 text-xs sm:text-sm font-medium transition-colors"
+                          title="Imprimir ticket da cozinha"
+                        >
+                          <Printer className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                          {printTicketMutation.isPending ? 'Imprimindo...' : 'Imprimir'}
+                        </button>
+
                         {order.status === 'received' && (
                           <button
                             onClick={() => updateOrderStatus(order.id, 'preparing')}

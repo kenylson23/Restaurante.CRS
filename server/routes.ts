@@ -1,12 +1,13 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertReservationSchema, insertContactSchema, insertOrderSchema, insertOrderItemSchema, insertMenuItemSchema, insertTableSchema } from "../shared/schema";
+import { insertReservationSchema, insertContactSchema, insertOrderSchema, insertOrderItemSchema, insertMenuItemSchema, insertTableSchema, insertPrinterSchema } from "../shared/schema";
 import { z } from "zod";
 import path from "path";
 import { auth, adminAuth } from "../shared/auth";
 import { generateTableQRCode, generateQRCodeSVG } from './qr-generator';
 import { imageProxyRouter } from './routes/image-proxy';
+import { PrinterService } from './services/PrinterService';
 
 // Cache otimizado para verificação de disponibilidade
 const availabilityCache = new Map<string, { available: boolean; timestamp: number }>();
@@ -783,6 +784,156 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json({ message: "Usuário removido com sucesso" });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // =================== PRINTER ROUTES ===================
+  
+  // Get all printers
+  app.get("/api/printers", async (req, res) => {
+    try {
+      const { location, printerFor } = req.query;
+      
+      let printers;
+      if (location) {
+        printers = await storage.getPrintersByLocation(location as string);
+      } else {
+        printers = await storage.getAllPrinters();
+      }
+      
+      // Filter by printerFor if provided
+      if (printerFor) {
+        printers = printers.filter(p => p.printerFor === printerFor);
+      }
+      
+      res.json(printers);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get active printers for location
+  app.get("/api/printers/active/:locationId", async (req, res) => {
+    try {
+      const { locationId } = req.params;
+      const { printerFor } = req.query;
+      
+      const printers = await storage.getActivePrinters(locationId, printerFor as string);
+      res.json(printers);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Create printer
+  app.post("/api/printers", async (req, res) => {
+    try {
+      const validation = insertPrinterSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ error: validation.error.message });
+      }
+      
+      const printer = await storage.createPrinter(validation.data);
+      res.status(201).json(printer);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  // Update printer
+  app.patch("/api/printers/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "ID inválido" });
+      }
+      
+      const printer = await storage.updatePrinter(id, req.body);
+      res.json(printer);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  // Delete printer
+  app.delete("/api/printers/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "ID inválido" });
+      }
+      
+      await storage.deletePrinter(id);
+      res.json({ message: "Impressora removida com sucesso" });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  // Print order ticket
+  app.post("/api/orders/:id/print", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { printerId } = req.body;
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "ID do pedido inválido" });
+      }
+      
+      const success = await PrinterService.printTicket(id, printerId);
+      
+      if (success) {
+        res.json({ message: "Ticket impresso com sucesso" });
+      } else {
+        res.status(500).json({ error: "Falha ao imprimir ticket" });
+      }
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Generate ticket preview (text format)
+  app.get("/api/orders/:id/ticket", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "ID do pedido inválido" });
+      }
+      
+      const ticket = await PrinterService.generateTicket(id);
+      
+      res.set('Content-Type', 'text/plain; charset=utf-8');
+      res.send(ticket);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Test printer connection
+  app.post("/api/printers/:id/test", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "ID da impressora inválido" });
+      }
+      
+      const printer = await storage.getPrinter(id);
+      if (!printer) {
+        return res.status(404).json({ error: "Impressora não encontrada" });
+      }
+      
+      // Simular teste de impressão
+      console.log(`Testando impressora ${printer.name} (${printer.type})`);
+      
+      res.json({ 
+        message: "Teste de impressão executado", 
+        printer: printer.name,
+        status: "success"
+      });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }

@@ -1,9 +1,9 @@
 import { 
-  reservations, contacts, menuItems, orders, orderItems, tables,
+  reservations, contacts, menuItems, orders, orderItems, tables, printers,
   type Reservation, type InsertReservation, 
   type Contact, type InsertContact, type MenuItem, type InsertMenuItem,
   type Order, type InsertOrder, type OrderItem, type InsertOrderItem,
-  type Table, type InsertTable
+  type Table, type InsertTable, type Printer, type InsertPrinter
 } from "../shared/schema";
 import { db } from "./db";
 import { eq, and, ne } from "drizzle-orm";
@@ -45,6 +45,15 @@ export interface IStorage {
   updateTable(id: number, table: Partial<Table>): Promise<Table>;
   deleteTable(id: number): Promise<void>;
   updateTableStatus(id: number, status: string): Promise<Table>;
+
+  // Printers
+  getAllPrinters(): Promise<Printer[]>;
+  getPrintersByLocation(locationId: string): Promise<Printer[]>;
+  getPrinter(id: number): Promise<Printer | undefined>;
+  createPrinter(printer: InsertPrinter): Promise<Printer>;
+  updatePrinter(id: number, printer: Partial<Printer>): Promise<Printer>;
+  deletePrinter(id: number): Promise<void>;
+  getActivePrinters(locationId: string, printerFor?: string): Promise<Printer[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -464,6 +473,72 @@ export class DatabaseStorage implements IStorage {
       .where(eq(tables.id, id))
       .returning();
     return table;
+  }
+
+  // Printer operations
+  async getAllPrinters(): Promise<Printer[]> {
+    await this.ensureInitialized();
+    return await db.select().from(printers);
+  }
+
+  async getPrintersByLocation(locationId: string): Promise<Printer[]> {
+    await this.ensureInitialized();
+    return await db
+      .select()
+      .from(printers)
+      .where(eq(printers.locationId, locationId));
+  }
+
+  async getPrinter(id: number): Promise<Printer | undefined> {
+    await this.ensureInitialized();
+    const [printer] = await db
+      .select()
+      .from(printers)
+      .where(eq(printers.id, id));
+    return printer;
+  }
+
+  async createPrinter(insertPrinter: InsertPrinter): Promise<Printer> {
+    await this.ensureInitialized();
+    const [printer] = await db
+      .insert(printers)
+      .values(insertPrinter)
+      .returning();
+    return printer;
+  }
+
+  async updatePrinter(id: number, updates: Partial<Printer>): Promise<Printer> {
+    await this.ensureInitialized();
+    const [printer] = await db
+      .update(printers)
+      .set(updates)
+      .where(eq(printers.id, id))
+      .returning();
+    return printer;
+  }
+
+  async deletePrinter(id: number): Promise<void> {
+    await this.ensureInitialized();
+    await db
+      .delete(printers)
+      .where(eq(printers.id, id));
+  }
+
+  async getActivePrinters(locationId: string, printerFor?: string): Promise<Printer[]> {
+    await this.ensureInitialized();
+    const conditions = [
+      eq(printers.locationId, locationId),
+      eq(printers.isActive, true)
+    ];
+
+    if (printerFor) {
+      conditions.push(eq(printers.printerFor, printerFor));
+    }
+
+    return await db
+      .select()
+      .from(printers)
+      .where(and(...conditions));
   }
 }
 

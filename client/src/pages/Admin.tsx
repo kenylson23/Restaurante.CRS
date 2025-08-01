@@ -6,6 +6,7 @@ import OrderManagement from '../components/OrderManagement';
 import MenuManagement from '../components/MenuManagement';
 import OrderStats from '../components/OrderStats';
 import TableManagement from '../components/TableManagement';
+import PrinterManagement from '../components/PrinterManagement';
 import RealTimeStatus from '../components/RealTimeStatus';
 
 export default function Admin() {
@@ -129,6 +130,16 @@ export default function Admin() {
               Mesas
             </button>
             <button
+              onClick={() => setActiveTab('printers')}
+              className={`py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap ${
+                activeTab === 'printers'
+                  ? 'border-red-500 text-red-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Impressoras
+            </button>
+            <button
               onClick={() => setActiveTab('analytics')}
               className={`py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap ${
                 activeTab === 'analytics'
@@ -147,6 +158,7 @@ export default function Admin() {
         {activeTab === 'orders' && <OrderManagement />}
         {activeTab === 'menu' && <MenuManagement />}
         {activeTab === 'tables' && <TableManagement />}
+        {activeTab === 'printers' && <PrinterManagement />}
         {activeTab === 'analytics' && <OrderStats />}
       </div>
     </div>
