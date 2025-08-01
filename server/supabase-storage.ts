@@ -415,7 +415,18 @@ export class SupabaseStorage implements IStorage {
       .order('table_number', { ascending: true });
 
     if (error) throw new Error(error.message);
-    return data || [];
+    
+    // Convert snake_case to camelCase
+    return (data || []).map(table => ({
+      id: table.id,
+      locationId: table.location_id,
+      tableNumber: table.table_number,
+      seats: table.seats,
+      status: table.status,
+      qrCode: table.qr_code,
+      qrCodeUrl: table.qr_code_url,
+      createdAt: table.created_at
+    }));
   }
 
   async getTablesByLocation(locationId: string): Promise<Table[]> {
@@ -460,14 +471,36 @@ export class SupabaseStorage implements IStorage {
 
   async createTable(insertTable: InsertTable): Promise<Table> {
     await this.ensureInitialized();
+    
+    // Convert camelCase to snake_case for Supabase
+    const supabaseData = {
+      location_id: insertTable.locationId,
+      table_number: insertTable.tableNumber,
+      seats: insertTable.seats,
+      status: insertTable.status || 'available',
+      qr_code: insertTable.qrCode,
+      qr_code_url: insertTable.qrCodeUrl
+    };
+    
     const { data, error } = await supabaseAdmin
       .from('tables')
-      .insert(insertTable)
+      .insert(supabaseData)
       .select()
       .single();
 
     if (error) throw new Error(error.message);
-    return data;
+    
+    // Convert back to camelCase for TypeScript
+    return {
+      id: data.id,
+      locationId: data.location_id,
+      tableNumber: data.table_number,
+      seats: data.seats,
+      status: data.status,
+      qrCode: data.qr_code,
+      qrCodeUrl: data.qr_code_url,
+      createdAt: data.created_at
+    };
   }
 
   async updateTableStatus(id: number, status: string): Promise<Table> {
