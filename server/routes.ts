@@ -415,6 +415,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/orders/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      
+      // Validate ID
+      if (isNaN(id) || id <= 0) {
+        return res.status(400).json({ error: "ID do pedido inválido" });
+      }
+      
       const order = await storage.getOrder(id);
       if (!order) {
         return res.status(404).json({ error: "Order not found" });
@@ -429,48 +435,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Server-Sent Events endpoint for real-time updates
   app.get("/api/orders/stream", (req, res) => {
-    // Set headers for Server-Sent Events
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Headers', 'Cache-Control');
+    try {
+      // Set headers for Server-Sent Events
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Headers', 'Cache-Control');
 
-    // Add connection to active connections
-    sseConnections.add(res);
-    console.log(`New SSE connection established. Total connections: ${sseConnections.size}`);
+      // Add connection to active connections
+      sseConnections.add(res);
+      console.log(`New SSE connection established. Total connections: ${sseConnections.size}`);
 
-    // Send initial connection message
-    res.write('data: {"type": "connected", "message": "Real-time connection established"}\n\n');
+      // Send initial connection message
+      res.write('data: {"type": "connected", "message": "Real-time connection established"}\n\n');
 
-    // Keep connection alive with periodic heartbeat
-    const heartbeat = setInterval(() => {
-      try {
-        res.write('data: {"type": "heartbeat", "timestamp": "' + new Date().toISOString() + '"}\n\n');
-      } catch (error) {
+      // Keep connection alive with periodic heartbeat
+      const heartbeat = setInterval(() => {
+        try {
+          res.write('data: {"type": "heartbeat", "timestamp": "' + new Date().toISOString() + '"}\n\n');
+        } catch (error) {
+          clearInterval(heartbeat);
+          sseConnections.delete(res);
+        }
+      }, 30000); // Send heartbeat every 30 seconds
+
+      // Handle client disconnect
+      req.on('close', () => {
         clearInterval(heartbeat);
         sseConnections.delete(res);
-      }
-    }, 30000); // Send heartbeat every 30 seconds
+        console.log(`Client disconnected from orders stream. Total connections: ${sseConnections.size}`);
+      });
 
-    // Handle client disconnect
-    req.on('close', () => {
-      clearInterval(heartbeat);
-      sseConnections.delete(res);
-      console.log(`Client disconnected from orders stream. Total connections: ${sseConnections.size}`);
-    });
-
-    req.on('end', () => {
-      clearInterval(heartbeat);
-      sseConnections.delete(res);
-      console.log(`Client ended orders stream connection. Total connections: ${sseConnections.size}`);
-    });
+      req.on('end', () => {
+        clearInterval(heartbeat);
+        sseConnections.delete(res);
+        console.log(`Client ended orders stream connection. Total connections: ${sseConnections.size}`);
+      });
+    } catch (error: any) {
+      console.error('Error in SSE endpoint:', error);
+      res.status(500).json({ error: 'Server-side events connection failed' });
+    }
   });
 
   // Delete order (admin only)
   app.delete("/api/orders/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      
+      // Validate ID
+      if (isNaN(id) || id <= 0) {
+        return res.status(400).json({ error: "ID do pedido inválido" });
+      }
       
       // Verificar se o pedido existe
       const existingOrder = await storage.getOrder(id);

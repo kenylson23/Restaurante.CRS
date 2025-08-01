@@ -53,7 +53,7 @@ interface KitchenStats {
   delayed: number;
 }
 
-type KitchenFiltersType = 'all' | 'pending' | 'preparing' | 'ready' | 'delivered';
+type KitchenFiltersType = 'all' | 'pending' | 'preparing' | 'ready' | 'delivered' | 'received';
 
 export default function Kitchen() {
   const [, setLocation] = useLocation();
@@ -61,6 +61,7 @@ export default function Kitchen() {
   const queryClient = useQueryClient();
 
   // Estados de controle
+  const [autoRefresh, setAutoRefresh] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [showStats, setShowStats] = useState(true);
   const [filter, setFilter] = useState<KitchenFiltersType>('all');
@@ -69,7 +70,7 @@ export default function Kitchen() {
   const [lastOrderCount, setLastOrderCount] = useState(0);
   const [preparationTimes, setPreparationTimes] = useState<{[key: number]: string}>({});
   const { isConnected } = useRealTimeUpdates({ 
-    enabled: true, 
+    enabled: autoRefresh, 
     enableSound: soundEnabled 
   });
 
@@ -127,12 +128,12 @@ export default function Kitchen() {
   };
 
   // Queries para dados
-  const { data: orders = [], isLoading: ordersLoading } = useQuery({
+  const { data: orders = [], isLoading: ordersLoading } = useQuery<Order[]>({
     queryKey: ['/api/orders'],
     refetchInterval: false, // Removido auto-refresh
   });
 
-  const { data: menuItems = [] } = useQuery({
+  const { data: menuItems = [] } = useQuery<MenuItem[]>({
     queryKey: ['/api/menu-items'],
   });
 
@@ -441,12 +442,12 @@ export default function Kitchen() {
                   Todos
                 </button>
                 <button
-                  onClick={() => setFilter('received')}
+                  onClick={() => setFilter('pending')}
                   className={`px-2 sm:px-3 py-1 rounded-md text-xs transition-colors ${
-                    filter === 'received' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    filter === 'pending' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
                 >
-                  Recebidos
+                  Pendentes
                 </button>
                 <button
                   onClick={() => setFilter('preparing')}
