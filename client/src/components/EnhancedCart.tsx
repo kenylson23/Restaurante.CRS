@@ -1,8 +1,14 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MenuItem } from '@shared/schema';
 
-interface CartItem extends MenuItem {
+interface CartItem {
+  id: number;
+  name: string;
+  price: string;
+  description: string;
+  category: string;
+  image?: string;
+  preparationTime?: number;
   quantity: number;
   customizations: string[];
 }
@@ -83,6 +89,25 @@ export default function EnhancedCart({
 
   const getTotalPrice = () => {
     return getSubtotal() + deliveryFee;
+  };
+
+  const getPreparationTime = () => {
+    // Calcular tempo baseado nos itens do carrinho
+    const baseTime = 15; // tempo base em minutos
+    const itemTime = cart.reduce((total, item) => {
+      const itemPreparationTime = item.preparationTime || 10; // tempo padrão por item
+      return total + (itemPreparationTime * item.quantity);
+    }, 0);
+    
+    // Adicionar tempo extra baseado no tipo de pedido
+    let extraTime = 0;
+    if (customerInfo.orderType === 'delivery') {
+      extraTime = 15; // tempo extra para delivery
+    } else if (customerInfo.orderType === 'takeaway') {
+      extraTime = 5; // tempo extra para takeaway
+    }
+    
+    return Math.max(baseTime + Math.ceil(itemTime / 3) + extraTime, 15); // mínimo 15 minutos
   };
 
   // Tempo de preparo será definido pela cozinha após receber o pedido
