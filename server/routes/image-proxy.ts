@@ -1,24 +1,22 @@
 import { Router } from 'express';
-import { getImageUrl } from '../../shared/supabase-storage';
+// Temporarily disabled Supabase image proxy since project migrated to local PostgreSQL
+// import { getImageUrl } from '../../shared/supabase-storage';
 
 const router = Router();
 
 /**
- * Rota para servir imagens do Supabase Storage
+ * Rota para servir imagens locais
  * GET /api/images/:category/:filename
  */
 router.get('/:category/:filename', (req, res) => {
   try {
     const { category, filename } = req.params;
     
-    // Construir caminho da imagem no Supabase
-    const imagePath = `${category}/${filename}`;
+    // For local development, serve images from public/uploads directory
+    const localImagePath = `/uploads/${category}/${filename}`;
     
-    // Obter URL pública da imagem
-    const imageUrl = getImageUrl(imagePath);
-    
-    // Redirecionar para a URL da imagem no Supabase
-    res.redirect(imageUrl);
+    // Redirect to local static file path
+    res.redirect(localImagePath);
   } catch (error) {
     console.error('Erro ao servir imagem:', error);
     res.status(404).json({ error: 'Imagem não encontrada' });
@@ -33,7 +31,7 @@ router.get('/info/:category/:filename', (req, res) => {
   try {
     const { category, filename } = req.params;
     const imagePath = `${category}/${filename}`;
-    const imageUrl = getImageUrl(imagePath);
+    const imageUrl = `/uploads/${imagePath}`;
     
     res.json({
       path: imagePath,
