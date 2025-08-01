@@ -1,10 +1,37 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '../lib/queryClient';
-import { Order, OrderItem, MenuItem } from '@shared/schema';
 import { useToast } from '../hooks/use-toast';
 import { X, Edit3, Trash2, MessageSquare, Clock, CheckCircle, XCircle, Truck, Phone, MapPin, CreditCard, FileText, Share2 } from 'lucide-react';
+
+interface OrderItem {
+  id: number;
+  orderId: number;
+  menuItemId: number;
+  quantity: number;
+  unitPrice: string;
+  customizations?: string[];
+  subtotal: string;
+}
+
+interface Order {
+  id: number;
+  customerName: string;
+  customerPhone: string;
+  customerEmail?: string;
+  deliveryAddress?: string;
+  orderType: string;
+  locationId: string;
+  tableId?: number;
+  status: string;
+  totalAmount: string;
+  paymentMethod: string;
+  paymentStatus: string;
+  notes?: string;
+  estimatedDeliveryTime?: string;
+  createdAt: string;
+}
 
 interface OrderWithItems extends Order {
   items: OrderItem[];
@@ -70,7 +97,7 @@ export default function OrderManagement() {
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ orderId, status }: { orderId: number; status: string }) => {
-      const response = await apiRequest('PATCH', `/api/orders/${orderId}/status`, { status });
+      const response = await apiRequest('PATCH', `/api/orders/${orderId}`, { status });
       return response.json();
     },
     onSuccess: (data, variables) => {
