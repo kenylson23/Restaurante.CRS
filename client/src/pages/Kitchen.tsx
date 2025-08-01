@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../hooks/useAuth';  
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRealTimeUpdates } from '../hooks/useRealTimeUpdates';
+import { PrintJobHistory } from '../components/PrintJobHistory';
 import { 
   ArrowLeft, RefreshCw, Bell, BellOff, BarChart3, 
   Clock, CheckCircle, Users, MapPin, Phone, Timer, 
   AlertCircle, ChefHat, Package, TrendingUp, Star,
-  Flame, Play, Pause, Printer
+  Flame, Play, Pause, Printer, History
 } from 'lucide-react';
 
 interface OrderItem {
@@ -64,6 +65,7 @@ export default function Kitchen() {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [showStats, setShowStats] = useState(true);
+  const [showPrintHistory, setShowPrintHistory] = useState(false);
   const [filter, setFilter] = useState<KitchenFiltersType>('all');
   const [selectedLocation, setSelectedLocation] = useState('all');
   const [sortBy, setSortBy] = useState<'time' | 'priority' | 'status'>('time');

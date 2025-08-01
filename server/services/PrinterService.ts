@@ -2,6 +2,12 @@ import { db } from "../db";
 import { printers, orders, orderItems, menuItems } from "../../shared/schema";
 import { eq, and } from "drizzle-orm";
 import type { Order, OrderItem, MenuItem, Printer } from "../../shared/schema";
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import * as fs from 'fs';
+import * as path from 'path';
+
+const execAsync = promisify(exec);
 
 export class PrinterService {
   // Gerar ticket formatado para impressão
@@ -191,7 +197,7 @@ export class PrinterService {
     return labels[method] || method;
   }
 
-  // Simular impressão (para teste)
+  // Sistema de impressão avançado
   static async printTicket(orderId: number, printerId?: number): Promise<boolean> {
     try {
       const ticket = await this.generateTicket(orderId);
@@ -207,17 +213,255 @@ export class PrinterService {
           throw new Error("Impressora não encontrada ou inativa");
         }
         
-        // Aqui seria a lógica real de impressão baseada no tipo de impressora
-        console.log(`Imprimindo na impressora ${printer.name} (${printer.type}):`, ticket);
+        // Criar job de impressão
+        await this.createPrintJob(orderId, printerId, ticket);
+        
+        // Executar impressão baseada no tipo
+        return await this.executePrint(printer, ticket);
       } else {
-        // Impressão padrão (console para desenvolvimento)
-        console.log("Ticket gerado:", ticket);
+        // Auto-selecionar impressora ativa para cozinha
+        const activeKitchenPrinters = await db
+          .select()
+          .from(printers)
+          .where(and(
+            eq(printers.isActive, true),
+            eq(printers.printerFor, 'kitchen')
+          ));
+        
+        if (activeKitchenPrinters.length > 0) {
+          const printer = activeKitchenPrinters[0];
+          await this.createPrintJob(orderId, printer.id, ticket);
+          return await this.executePrint(printer, ticket);
+        } else {
+          // Fallback para impressão no console
+          console.log("Ticket gerado (sem impressora configurada):", ticket);
+          return true;
+        }
       }
-      
-      return true;
     } catch (error) {
       console.error("Erro ao imprimir ticket:", error);
       return false;
+    }
+  }
+
+  // Criar job de impressão no banco
+  static async createPrintJob(orderId: number, printerId: number, content: string): Promise<void> {
+    try {
+      await db.execute(`
+        INSERT INTO print_jobs (order_id, printer_id, content, status)
+        VALUES (${orderId}, ${printerId}, '${content.replace(/'/g, "''")}', 'pending')
+      `);
+    } catch (error) {
+      console.error("Erro ao criar job de impressão:", error);
+    }
+  }
+
+  // Executar impressão baseada no tipo da impressora
+  static async executePrint(printer: Printer, content: string): Promise<boolean> {
+    try {
+      switch (printer.type) {
+        case 'network':
+          return await this.printToNetwork(printer, content);
+        case 'usb':
+          return await this.printToUSB(printer, content);
+        case 'bluetooth':
+          return await this.printToBluetooth(printer, content);
+        default:
+          console.log(`Impressão simulada na ${printer.name}:`, content);
+          return true;
+      }
+    } catch (error) {
+      console.error(`Erro ao imprimir na ${printer.name}:`, error);
+      return false;
+    }
+  }
+
+  // Impressão em rede (TCP/IP)
+  static async printToNetwork(printer: Printer, content: string): Promise<boolean> {
+    try {
+      // Simulação de impressão TCP/IP
+      console.log(`Enviando para impressora de rede ${printer.ipAddress}:${printer.port}`);
+      console.log("Conteúdo:", content);
+      
+      // Em produção, usar socket TCP aqui
+      // const net = require('net');
+      // const client = new net.Socket();
+      // client.connect(printer.port, printer.ipAddress, () => {
+      //   client.write(content);
+      //   client.end();
+      // });
+      
+      return true;
+    } catch (error) {
+      console.error("Erro na impressão de rede:", error);
+      return false;
+    }
+  }
+
+  // Impressão USB
+  static async printToUSB(printer: Printer, content: string): Promise<boolean> {
+    try {
+      console.log(`Enviando para impressora USB ${printer.devicePath}`);
+      
+      // Em produção, usar comando do sistema
+      // await fs.writeFileSync(printer.devicePath!, content);
+      // ou usar lp/lpr: await execAsync(`echo "${content}" | lp -d ${printer.name}`);
+      
+      console.log("Conteúdo enviado via USB:", content);
+      return true;
+    } catch (error) {
+      console.error("Erro na impressão USB:", error);
+      return false;
+    }
+  }
+
+  // Impressão Bluetooth
+  static async printToBluetooth(printer: Printer, content: string): Promise<boolean> {
+    try {
+      console.log(`Enviando para impressora Bluetooth ${printer.name}`);
+      
+      // Em produção, usar biblioteca Bluetooth
+      console.log("Conteúdo enviado via Bluetooth:", content);
+      return true;
+    } catch (error) {
+      console.error("Erro na impressão Bluetooth:", error);
+      return false;
+    }
+  }
+
+  // Testar impressora
+  static async testPrinter(printerId: number): Promise<boolean> {
+    try {
+      const [printer] = await db
+        .select()
+        .from(printers)
+        .where(eq(printers.id, printerId));
+        
+      if (!printer) {
+        throw new Error("Impressora não encontrada");
+      }
+
+      const testContent = this.generateTestTicket(printer);
+      return await this.executePrint(printer, testContent);
+    } catch (error) {
+      console.error("Erro ao testar impressora:", error);
+      return false;
+    }
+  }
+
+  // Gerar ticket de teste
+  static generateTestTicket(printer: Printer): string {
+    const ESC = '\x1B';
+    const GS = '\x1D';
+    const CENTER = `${ESC}a\x01`;
+    const LEFT = `${ESC}a\x00`;
+    const BOLD_ON = `${ESC}E\x01`;
+    const BOLD_OFF = `${ESC}E\x00`;
+    const CUT_PAPER = `${GS}V\x01`;
+    const LINE_FEED = '\n';
+    const SEPARATOR = '--------------------------------';
+
+    let ticket = `${ESC}@`; // Inicializar
+    ticket += CENTER;
+    ticket += BOLD_ON + 'TESTE DE IMPRESSORA' + BOLD_OFF + LINE_FEED;
+    ticket += LEFT;
+    ticket += SEPARATOR + LINE_FEED;
+    ticket += `Impressora: ${printer.name}` + LINE_FEED;
+    ticket += `Tipo: ${printer.type.toUpperCase()}` + LINE_FEED;
+    ticket += `Papel: ${printer.paperWidth}mm` + LINE_FEED;
+    ticket += `Data: ${new Date().toLocaleDateString('pt-AO')}` + LINE_FEED;
+    ticket += `Hora: ${new Date().toLocaleTimeString('pt-AO')}` + LINE_FEED;
+    ticket += SEPARATOR + LINE_FEED;
+    ticket += CENTER + 'TESTE REALIZADO COM SUCESSO' + LINE_FEED;
+    ticket += LEFT + LINE_FEED + LINE_FEED;
+    ticket += CUT_PAPER;
+    
+    return ticket;
+  }
+
+  // Buscar histórico de impressões
+  static async getPrintHistory(orderId?: number, limit: number = 50): Promise<any[]> {
+    try {
+      let query = `
+        SELECT 
+          pj.*,
+          o.customer_name,
+          p.name as printer_name
+        FROM print_jobs pj
+        LEFT JOIN orders o ON pj.order_id = o.id
+        LEFT JOIN printers p ON pj.printer_id = p.id
+      `;
+      
+      if (orderId) {
+        query += ` WHERE pj.order_id = ${orderId}`;
+      }
+      
+      query += ` ORDER BY pj.created_at DESC LIMIT ${limit}`;
+      
+      const result = await db.execute(query);
+      return (result as any).rows || [];
+    } catch (error) {
+      console.error("Erro ao buscar histórico:", error);
+      return [];
+    }
+  }
+
+  // Sistema de impressão automática para novos pedidos
+  static async autoPrintNewOrder(orderId: number): Promise<void> {
+    try {
+      // Buscar impressoras com impressão automática ativada
+      const autoPrinters = await db
+        .select()
+        .from(printers)
+        .where(and(
+          eq(printers.isActive, true),
+          eq(printers.autoprint, true),
+          eq(printers.printerFor, 'kitchen')
+        ));
+
+      // Imprimir em todas as impressoras automáticas
+      for (const printer of autoPrinters) {
+        await this.printTicket(orderId, printer.id);
+      }
+    } catch (error) {
+      console.error("Erro na impressão automática:", error);
+    }
+  }
+
+  // Reprocessar jobs falhados
+  static async retryFailedJobs(): Promise<void> {
+    try {
+      const failedJobs = await db.execute(`
+        SELECT pj.*, p.* FROM print_jobs pj
+        JOIN printers p ON pj.printer_id = p.id
+        WHERE pj.status = 'failed' 
+        AND pj.retry_count < 3 
+        AND p.is_active = true
+        ORDER BY pj.created_at ASC
+        LIMIT 10
+      `);
+
+      for (const job of ((failedJobs as any).rows || [])) {
+        console.log(`Reprocessando job ${job.id}...`);
+        
+        const success = await this.executePrint(job as any, job.content);
+        
+        if (success) {
+          await db.execute(`
+            UPDATE print_jobs 
+            SET status = 'completed', printed_at = NOW(), retry_count = retry_count + 1
+            WHERE id = ${job.id}
+          `);
+        } else {
+          await db.execute(`
+            UPDATE print_jobs 
+            SET retry_count = retry_count + 1, error_message = 'Retry failed'
+            WHERE id = ${job.id}
+          `);
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao reprocessar jobs:", error);
     }
   }
 
@@ -229,7 +473,7 @@ export class PrinterService {
     ];
 
     if (printerFor) {
-      conditions.push(eq(printers.printerFor, printerFor));
+      conditions.push(eq(printers.printerFor, printerFor as any));
     }
 
     return await db

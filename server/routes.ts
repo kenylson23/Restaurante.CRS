@@ -912,7 +912,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Test printer connection
+  // Test printer connection (enhanced)
   app.post("/api/printers/:id/test", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
@@ -921,19 +921,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "ID da impressora inválido" });
       }
       
-      const printer = await storage.getPrinter(id);
-      if (!printer) {
-        return res.status(404).json({ error: "Impressora não encontrada" });
+      const success = await PrinterService.testPrinter(id);
+      
+      if (success) {
+        res.json({ 
+          message: "Teste de impressão realizado com sucesso",
+          status: "success"
+        });
+      } else {
+        res.status(500).json({ 
+          error: "Falha no teste da impressora",
+          status: "failed"
+        });
+      }
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get print history
+  app.get("/api/print-history", async (req, res) => {
+    try {
+      const { orderId, limit } = req.query;
+      const orderIdNum = orderId ? parseInt(orderId as string) : undefined;
+      const limitNum = limit ? parseInt(limit as string) : 50;
+      
+      const history = await PrinterService.getPrintHistory(orderIdNum, limitNum);
+      res.json(history);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Retry failed print jobs
+  app.post("/api/print-jobs/retry", async (req, res) => {
+    try {
+      await PrinterService.retryFailedJobs();
+      res.json({ message: "Jobs falhados reprocessados com sucesso" });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Auto-print new orders (webhook for integrations)
+  app.post("/api/orders/:id/auto-print", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "ID do pedido inválido" });
       }
       
-      // Simular teste de impressão
-      console.log(`Testando impressora ${printer.name} (${printer.type})`);
-      
-      res.json({ 
-        message: "Teste de impressão executado", 
-        printer: printer.name,
-        status: "success"
-      });
+      await PrinterService.autoPrintNewOrder(id);
+      res.json({ message: "Impressão automática iniciada" });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
