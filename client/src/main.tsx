@@ -1,8 +1,11 @@
+import React from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
 import "./styles/performance.css";
-import heroImage from "@assets/From tortillas with Love   photo credit @andersson_samd_1751272348650.jpg";
+
+// Use a placeholder hero image path since the specific asset may not exist
+const heroImage = "/uploads/hero/hero-image.jpg";
 
 // Preload crítico da imagem do hero
 const preloadHeroImage = () => {
