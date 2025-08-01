@@ -58,12 +58,8 @@ export default function SimpleMenuShowcase() {
               viewport={{ once: true }}
             >
               <div className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
-                <div className="relative overflow-hidden">
-                  <img 
-                    src={item.image} 
-                    alt={item.name} 
-                    className="w-full h-48 object-cover transition-transform duration-300 hover:scale-110" 
-                  />
+                <div className="relative overflow-hidden bg-gradient-to-br from-red-400 to-orange-400 h-48 flex items-center justify-center">
+                  <span className="text-6xl">🌮</span>
                 </div>
                 <div className="p-6">
                   <h3 className="text-xl font-bold text-gray-900 mb-2">{item.name}</h3>
