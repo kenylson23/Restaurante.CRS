@@ -1,9 +1,25 @@
 import express, { type Request, Response, NextFunction } from "express";
+import cors from "cors";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import path from "path";
 
 const app = express();
+
+// Configure CORS for production deployment
+const corsOptions = {
+  origin: [
+    'https://las-tortillas.vercel.app', // Vercel frontend URL (to be updated)
+    'http://localhost:5173', // Local development
+    'http://localhost:5000', // Local backend
+    ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : [])
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
