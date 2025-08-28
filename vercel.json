@@ -1,4 +1,11 @@
 {
+  "buildCommand": "cd client && npm install && npx vite build",
+  "outputDirectory": "dist/public",
+  "installCommand": "npm install",
+  "framework": null,
+  "env": {
+    "VITE_API_URL": "https://las-tortillas-backend.onrender.com"
+  },
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]
