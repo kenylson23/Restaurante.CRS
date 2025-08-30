@@ -1,0 +1,26 @@
+// Load environment variables
+import { config } from 'dotenv';
+if (process.env.NODE_ENV !== 'production') {
+  config({ path: '.env.local' });
+}
+
+import { drizzle } from 'drizzle-orm/postgres-js';
+import postgres from 'postgres';
+import * as schema from "../shared/schema";
+
+// Use PostgreSQL database connection
+const DATABASE_URL = process.env.DATABASE_URL;
+
+if (!DATABASE_URL) {
+  throw new Error('Missing DATABASE_URL environment variable');
+}
+
+console.log('Connecting to PostgreSQL database...');
+
+// Create connection using postgres-js
+const sql = postgres(DATABASE_URL, {
+  max: 10, // Connection pool size
+  prepare: false
+});
+
+export const db = drizzle(sql, { schema });

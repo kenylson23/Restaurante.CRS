@@ -1,0 +1,108 @@
+// Environment variables loaded from system in production
+// For development, set variables in .env.local in project root
+
+import express, { type Request, Response, NextFunction } from "express";
+import cors from "cors";
+import { registerRoutes } from "./routes";
+import { setupVite, serveStatic, log } from "./vite";
+import path from "path";
+
+const app = express();
+
+// Configure CORS for production deployment
+const corsOptions = {
+  origin: [
+    'https://las-tortillas.vercel.app', // Vercel frontend URL (to be updated)
+    'http://localhost:5173', // Local development
+    'http://localhost:5000', // Local backend
+    ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : [])
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
+};
+
+app.use(cors(corsOptions));
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+
+// Health check endpoint for Render
+app.get('/api/health', (req: Request, res: Response) => {
+  res.status(200).json({ 
+    status: 'healthy', 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    version: process.version,
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
+// Serve static files from attached_assets
+app.use('/attached_assets', express.static(path.join(process.cwd(), 'attached_assets')));
+
+// Serve static files from public directory
+app.use(express.static(path.join(process.cwd(), 'public')));
+
+// Serve uploaded images
+app.use('/uploads', express.static(path.join(process.cwd(), 'public', 'uploads')));
+
+app.use((req, res, next) => {
+  const start = Date.now();
+  const path = req.path;
+  let capturedJsonResponse: Record<string, any> | undefined = undefined;
+
+  const originalResJson = res.json;
+  res.json = function (bodyJson, ...args) {
+    capturedJsonResponse = bodyJson;
+    return originalResJson.apply(res, [bodyJson, ...args]);
+  };
+
+  res.on("finish", () => {
+    const duration = Date.now() - start;
+    if (path.startsWith("/api")) {
+      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+      if (capturedJsonResponse) {
+        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+      }
+
+      if (logLine.length > 80) {
+        logLine = logLine.slice(0, 79) + "…";
+      }
+
+      log(logLine);
+    }
+  });
+
+  next();
+});
+
+(async () => {
+  const server = await registerRoutes(app);
+
+  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+    const status = err.status || err.statusCode || 500;
+    const message = err.message || "Internal Server Error";
+
+    res.status(status).json({ message });
+    throw err;
+  });
+
+  // importantly only setup vite in development and after
+  // setting up all the other routes so the catch-all route
+  // doesn't interfere with the other routes
+  if (app.get("env") === "development") {
+    await setupVite(app, server);
+  } else {
+    serveStatic(app);
+  }
+
+  // Use PORT environment variable for production (Render) or default to 5000 for development
+  const port = process.env.PORT ? parseInt(process.env.PORT) : 5000;
+  server.listen({
+    port,
+    host: "0.0.0.0",
+    reusePort: true,
+  }, () => {
+    log(`serving on port ${port}`);
+  });
+})();

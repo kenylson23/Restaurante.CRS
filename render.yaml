@@ -3,7 +3,6 @@ services:
     name: las-tortillas-api
     runtime: node
     plan: starter
-    rootDir: server
     buildCommand: npm install && npm run build
     startCommand: npm start
     envVars:
