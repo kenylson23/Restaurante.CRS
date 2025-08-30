@@ -1,10 +1,4 @@
-// Load environDATABASE_URL=postgresql://neondb_owner:npg_EYcsdnj5DG8Z@ep-steep-pine-adqiu0t1-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
-
-JWT_SECRET=chave-super-secreta-local-production-123456789012
-
-NODE_ENV=production
-
-PORT=10000ment variables from .env.local (development) or use system env (production)
+// Load environment variables from .env.local (development) or use system env (production)
 import { config } from 'dotenv';
 if (process.env.NODE_ENV !== 'production') {
   config({ path: '.env.local' });
