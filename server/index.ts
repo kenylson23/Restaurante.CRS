@@ -1,8 +1,5 @@
-// Load environment variables from .env.local (development) or use system env (production)
-import { config } from 'dotenv';
-if (process.env.NODE_ENV !== 'production') {
-  config({ path: '.env.local' });
-}
+// Environment variables loaded from system in production
+// For development, set variables in .env.local in project root
 
 import express, { type Request, Response, NextFunction } from "express";
 import cors from "cors";
