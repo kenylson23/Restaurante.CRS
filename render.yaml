@@ -1,18 +1,13 @@
 services:
   - type: web
-    name: las-tortillas-backend
+    name: las-tortillas-api
     runtime: node
     plan: starter
-    buildCommand: cd server && npm install && npm run build
-    startCommand: cd server && NODE_ENV=production node dist/index.js
+    rootDir: server
+    buildCommand: npm install && npm run build
+    startCommand: npm start
     envVars:
       - key: DATABASE_URL
-        sync: false
-      - key: SUPABASE_URL
-        sync: false
-      - key: SUPABASE_ANON_KEY
-        sync: false
-      - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
       - key: JWT_SECRET
         sync: false
@@ -20,8 +15,6 @@ services:
         value: production
       - key: PORT
         value: 10000
-      - key: CORS_ORIGIN
-        sync: false
     healthCheckPath: /api/health
     autoDeploy: true
 
