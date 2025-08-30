@@ -1,3 +1,9 @@
+// Load environment variables
+import { config } from 'dotenv';
+if (process.env.NODE_ENV !== 'production') {
+  config({ path: '.env.local' });
+}
+
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from "../shared/schema";

@@ -7,16 +7,28 @@ services:
     startCommand: cd server && npm start
     envVars:
       - key: DATABASE_URL
-        fromDatabase:
-          name: las-tortillas-db
-          property: connectionString
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: JWT_SECRET
+        sync: false
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 10000
+      - key: CORS_ORIGIN
+        sync: false
+    healthCheckPath: /api/health
+    autoDeploy: true
 
-databases:
-  - name: las-tortillas-db
-    databaseName: las-tortillas
-    user: las-tortillas-user
-    plan: starter
+# Note: Configure these environment variables manually in Render dashboard:
+# - DATABASE_URL: Your Neon PostgreSQL connection string
+# - SUPABASE_URL: Your Supabase project URL
+# - SUPABASE_ANON_KEY: Your Supabase anon key
+# - SUPABASE_SERVICE_ROLE_KEY: Your Supabase service role key
+# - JWT_SECRET: A secure random string (min 32 characters)
+# - CORS_ORIGIN: Your Vercel frontend URL (e.g., https://your-app.vercel.app)

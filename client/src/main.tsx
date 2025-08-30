@@ -4,8 +4,8 @@ import App from "./App";
 import "./index.css";
 import "./styles/performance.css";
 
-// Use a placeholder hero image path since the specific asset may not exist
-const heroImage = "/uploads/hero/hero-image.jpg";
+// Use the actual hero image that exists in the project
+const heroImage = "/images/hero-desktop.jpg";
 
 // Preload crítico da imagem do hero
 const preloadHeroImage = () => {

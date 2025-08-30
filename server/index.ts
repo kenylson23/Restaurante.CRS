@@ -1,3 +1,9 @@
+// Load environment variables from .env.local (development) or use system env (production)
+import { config } from 'dotenv';
+if (process.env.NODE_ENV !== 'production') {
+  config({ path: '.env.local' });
+}
+
 import express, { type Request, Response, NextFunction } from "express";
 import cors from "cors";
 import { registerRoutes } from "./routes";
@@ -22,6 +28,17 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Health check endpoint for Render
+app.get('/api/health', (req: Request, res: Response) => {
+  res.status(200).json({ 
+    status: 'healthy', 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    version: process.version,
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
 
 // Serve static files from attached_assets
 app.use('/attached_assets', express.static(path.join(process.cwd(), 'attached_assets')));

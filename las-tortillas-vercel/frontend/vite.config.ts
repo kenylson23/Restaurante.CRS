@@ -20,17 +20,37 @@ export default defineConfig({
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom'],
-          ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu'],
-          utils: ['date-fns', 'zod', 'nanoid'],
+          ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-select'],
+          utils: ['date-fns', 'zod', 'nanoid', 'clsx', 'tailwind-merge'],
           animations: ['framer-motion'],
-          charts: ['recharts']
-        }
+          charts: ['recharts'],
+          query: ['@tanstack/react-query'],
+          forms: ['react-hook-form', '@hookform/resolvers']
+        },
+        // Optimize asset naming
+        assetFileNames: (assetInfo) => {
+          const info = assetInfo.name.split('.');
+          const ext = info[info.length - 1];
+          if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(ext)) {
+            return `images/[name]-[hash][extname]`;
+          }
+          if (/css/i.test(ext)) {
+            return `styles/[name]-[hash][extname]`;
+          }
+          return `assets/[name]-[hash][extname]`;
+        },
+        chunkFileNames: 'js/[name]-[hash].js',
+        entryFileNames: 'js/[name]-[hash].js'
       }
     },
     // Otimizações para produção
     minify: 'terser',
     sourcemap: false,
-    target: 'es2015'
+    target: 'es2015',
+    // Configurações para melhor performance
+    cssCodeSplit: true,
+    assetsInlineLimit: 4096,
+    reportCompressedSize: false
   },
   server: {
     port: 3000,
